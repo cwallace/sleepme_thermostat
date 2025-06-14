@@ -5,6 +5,7 @@ from homeassistant.data_entry_flow import FlowResult
 from .sleepme import SleepMeClient
 from .const import DOMAIN, API_URL
 from httpx import HTTPStatusError
+from .device_utils import get_device_type, get_device_title
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -90,15 +91,25 @@ class SleepMeThermostatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # Fetch the device status, which now includes "about" information
                 device_status = await client.get_device_status()
                 _LOGGER.debug(f"Device status: {device_status}")
+                
+                # Get the selected device info for type detection
+                selected_device_info = next((dev for dev in self.claimed_devices if dev["id"] == device_id), {})
+                
+                # Determine device type
+                device_type = get_device_type(selected_device_info, device_status)
+                device_title = get_device_title(device_type, name)
+                
+                _LOGGER.info(f"Detected device type: {device_type} for device {device_id}")
 
                 # Store device info in the entry data
                 return self.async_create_entry(
-                    title=f"Dock Pro {name}",
+                    title=device_title,
                     data={
                         "api_url": API_URL,
                         "api_token": self.api_token,
                         "device_id": device_id,
                         "name": name,
+                        "device_type": device_type,
                         "firmware_version": device_status.get("about", {}).get("firmware_version"),
                         "mac_address": device_status.get("about", {}).get("mac_address"),
                         "model": device_status.get("about", {}).get("model"),

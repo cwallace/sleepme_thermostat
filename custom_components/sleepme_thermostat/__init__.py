@@ -4,6 +4,7 @@ from homeassistant.core import HomeAssistant
 from .sleepme import SleepMeClient
 from .update_manager import SleepMeUpdateManager
 from .const import DOMAIN
+from .device_utils import should_create_climate_entity, should_create_tracker_sensors
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,6 +28,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     model = entry.data.get("model")
     serial_number = entry.data.get("serial_number")
 
+    device_type = entry.data.get("device_type", "sleep_pad")  # Default for backward compatibility
+    
     _LOGGER.debug(f"API URL: {api_url}")
     _LOGGER.debug(f"API Token: {api_token}")
     _LOGGER.debug(f"Device ID: {device_id}")
@@ -34,6 +37,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.debug(f"MAC Address: {mac_address}")
     _LOGGER.debug(f"Model: {model}")
     _LOGGER.debug(f"Serial Number: {serial_number}")
+    _LOGGER.debug(f"Device Type: {device_type}")
 
     if not api_token or not device_id:
         _LOGGER.error("API token or device ID is missing from configuration.")
@@ -60,8 +64,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     _LOGGER.debug(f"SleepMeClient and Update Manager initialized and stored in hass.data for device {device_id}.")
 
-    # Forward the entry setup to the specific platforms, including the sensors platform
-    await hass.config_entries.async_forward_entry_setups(entry, ["climate", "binary_sensor", "sensor"])
+    # Forward to appropriate platforms based on device type
+    platforms = ["sensor"]  # All devices get sensors (but different sensors based on device type)
+    
+    if should_create_climate_entity(device_type):
+        platforms.extend(["climate", "binary_sensor"])
+        _LOGGER.debug(f"Adding climate and binary_sensor platforms for sleep pad {device_id}")
+    
+    _LOGGER.debug(f"Setting up platforms {platforms} for {device_type} device {device_id}")
+    
+    await hass.config_entries.async_forward_entry_setups(entry, platforms)
 
     _LOGGER.info("SleepMe Thermostat component initialized successfully.")
     return True
