@@ -12,7 +12,7 @@ _LOGGER = logging.getLogger(__name__)
 class SleepMeThermostatConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for SleepMe Thermostat."""
 
-    VERSION = 3
+    VERSION = 4
 
     def __init__(self) -> None:
         """Initialize the config flow."""
