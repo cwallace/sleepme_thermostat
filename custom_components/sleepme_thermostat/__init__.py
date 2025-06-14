@@ -65,11 +65,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     _LOGGER.debug(f"SleepMeClient and Update Manager initialized and stored in hass.data for device {device_id}.")
 
     # Forward to appropriate platforms based on device type
-    platforms = ["sensor"]  # All devices get sensors (but different sensors based on device type)
+    platforms = ["sensor", "binary_sensor"]  # All devices get sensors and binary_sensors
     
     if should_create_climate_entity(device_type):
-        platforms.extend(["climate", "binary_sensor"])
-        _LOGGER.debug(f"Adding climate and binary_sensor platforms for sleep pad {device_id}")
+        platforms.append("climate")
+        _LOGGER.debug(f"Adding climate platform for sleep pad {device_id}")
     
     _LOGGER.debug(f"Setting up platforms {platforms} for {device_type} device {device_id}")
     
