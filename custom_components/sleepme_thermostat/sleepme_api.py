@@ -60,8 +60,6 @@ class SleepMeAPI:
             _LOGGER.debug(f"[{request_id}] API request to {endpoint} failed after all retries.")
             return {}  # Return an empty dictionary on failure
 
-        _LOGGER.warning(f"[{request_id}] Handling error: {error}. Retries remaining: {retries}")
-
         # Determine backoff time based on error type
         if isinstance(error, httpx.HTTPStatusError):
             if error.response.status_code == 403:
@@ -70,24 +68,30 @@ class SleepMeAPI:
             elif error.response.status_code == 429:
                 # Backoff times: 30, 60, 120, 240... seconds for 429 errors
                 initial_backoff = 30
-                _LOGGER.warning(f"[{request_id}] 429 Too Many Requests. Applying backoff starting at {initial_backoff} seconds.")
             elif error.response.status_code in {500, 502, 503, 504}:
                 # Backoff times: 10, 20, 40, 80... seconds for server errors
                 initial_backoff = 10
-                _LOGGER.warning(f"[{request_id}] Server error {error.response.status_code}. Applying backoff starting at {initial_backoff} seconds.")
             else:
                 _LOGGER.debug(f"[{request_id}] HTTP error {error.response.status_code}. No retry configured.")
                 raise ValueError("cannot_connect")
         elif isinstance(error, httpx.TimeoutException):
             # Backoff times: 10, 20, 40, 80... seconds for timeouts
             initial_backoff = 10
-            _LOGGER.warning(f"[{request_id}] Timeout occurred. Applying backoff starting at {initial_backoff} seconds.")
         elif isinstance(error, httpx.RequestError):
             _LOGGER.debug(f"[{request_id}] Request error: {error}. Cannot connect.")
             raise ValueError("cannot_connect")
 
         backoff_time = initial_backoff * (2 ** (retries - 1))
-        _LOGGER.warning(f"[{request_id}] Retrying after {backoff_time} seconds. Retries left: {retries-1}")
+        
+        # Single consolidated warning message
+        if isinstance(error, httpx.HTTPStatusError) and error.response.status_code == 429:
+            _LOGGER.warning(f"[{request_id}] Rate limited (429). Retrying in {backoff_time}s. Attempts left: {retries-1}")
+        elif isinstance(error, httpx.HTTPStatusError) and error.response.status_code in {500, 502, 503, 504}:
+            _LOGGER.warning(f"[{request_id}] Server error ({error.response.status_code}). Retrying in {backoff_time}s. Attempts left: {retries-1}")
+        elif isinstance(error, httpx.TimeoutException):
+            _LOGGER.warning(f"[{request_id}] Request timeout. Retrying in {backoff_time}s. Attempts left: {retries-1}")
+        else:
+            _LOGGER.warning(f"[{request_id}] API error: {error}. Retrying in {backoff_time}s. Attempts left: {retries-1}")
 
         await asyncio.sleep(backoff_time)
 
