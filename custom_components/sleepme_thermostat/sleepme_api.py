@@ -57,7 +57,18 @@ class SleepMeAPI:
         request_id = f"{method.upper()}-{endpoint}-{int(time.time())}"
 
         if retries <= 0:
-            _LOGGER.debug(f"[{request_id}] API request to {endpoint} failed after all retries.")
+            # Log specific error types even when not retrying
+            if isinstance(error, httpx.HTTPStatusError):
+                if error.response.status_code == 429:
+                    _LOGGER.info(f"[{request_id}] Rate limited (429). No retry configured - using cached data.")
+                elif error.response.status_code in {500, 502, 503, 504}:
+                    _LOGGER.warning(f"[{request_id}] Server error ({error.response.status_code}). No retry configured.")
+                else:
+                    _LOGGER.debug(f"[{request_id}] HTTP error {error.response.status_code}. No retry configured.")
+            elif isinstance(error, httpx.TimeoutException):
+                _LOGGER.warning(f"[{request_id}] Request timeout. No retry configured.")
+            else:
+                _LOGGER.debug(f"[{request_id}] API request to {endpoint} failed after all retries.")
             return {}  # Return an empty dictionary on failure
 
         # Determine backoff time based on error type
