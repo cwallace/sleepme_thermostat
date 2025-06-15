@@ -71,7 +71,7 @@ class SleepMeClient:
         _LOGGER.error(f"Unexpected response format for claimed devices: {response}")
         return []
 
-    async def get_device_status(self, retries: int = 0):
+    async def get_device_status(self, retries: int = 1):
         """Retrieve the device status, with retry logic."""
         endpoint = f"devices/{self.device_id}"
         _LOGGER.debug(f"[Device {self.device_id}] Fetching device status from {endpoint}")

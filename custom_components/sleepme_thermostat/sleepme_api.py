@@ -25,11 +25,6 @@ class SleepMeAPI:
             # Rate limiting logic
             if len(self.request_times) == self.request_times.maxlen and current_time - self.request_times[0] < self.rate_limit_interval:
                 wait_time = self.rate_limit_interval - (current_time - self.request_times[0])
-
-                if method.upper() == "GET":
-                    _LOGGER.warning(f"[{request_id}] Rate limiting active. Discarding GET request to {endpoint} instead of delaying by {wait_time:.2f} seconds.")
-                    return {}  # Discard the GET request and return an empty dictionary
-
                 _LOGGER.debug(f"[{request_id}] Rate limiting: waiting for {wait_time:.2f} seconds before making {method.upper()} request to {endpoint}.")
                 await asyncio.sleep(wait_time)
 
