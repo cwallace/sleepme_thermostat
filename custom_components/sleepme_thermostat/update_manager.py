@@ -16,8 +16,8 @@ class SleepMeUpdateManager(DataUpdateCoordinator):
         # Initialize the last known good status as None
         self._last_valid_status = None
 
-        # Set the update interval to 30 seconds
-        update_interval = timedelta(seconds=30)
+        # Set the update interval to 60 seconds
+        update_interval = timedelta(seconds=60)
 
         super().__init__(
             hass,
