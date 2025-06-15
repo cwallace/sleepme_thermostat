@@ -34,6 +34,13 @@ class SleepMeUpdateManager(DataUpdateCoordinator):
 
             # If the device status is empty, return the last valid status
             if not device_status:
+                # Debug logging with more details about the empty response
+                if _LOGGER.isEnabledFor(logging.DEBUG):
+                    _LOGGER.debug(f"Device {self.device_id} returned empty response. "
+                                f"Response type: {type(device_status)}, "
+                                f"Response value: {device_status}, "
+                                f"Has last valid status: {self._last_valid_status is not None}")
+                
                 _LOGGER.warning(f"Using last valid status for device {self.device_id} due to empty or failed update.")
                 return self._last_valid_status or {
                     "status": {},
@@ -51,6 +58,13 @@ class SleepMeUpdateManager(DataUpdateCoordinator):
             return self._last_valid_status
 
         except Exception as e:
+            # Enhanced debug logging for exceptions
+            if _LOGGER.isEnabledFor(logging.DEBUG):
+                _LOGGER.debug(f"Exception occurred while updating device {self.device_id}. "
+                            f"Exception type: {type(e).__name__}, "
+                            f"Exception message: {str(e)}, "
+                            f"Has last valid status: {self._last_valid_status is not None}")
+            
             _LOGGER.error(f"Error updating device data for {self.device_id}: {e}")
             # If an error occurs, return the last valid status
             return self._last_valid_status or {
